@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#140a2e" />
+    <meta name="description" content="Космическая аркада, которой управляешь двумя руками через веб-камеру." />
+    <title>Hand Pilot</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23ff6b4a'/%3E%3Cpath d='M32 10 48 50 32 42 16 50Z' fill='%23fff4e6'/%3E%3C/svg%3E" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  </head>
+  <body>
+    <video id="video" playsinline muted></video>
+    <canvas id="stage"></canvas>
+
+    <!-- Hand cursor: follows the index finger, fills up while hovering a button -->
+    <div id="cursor" aria-hidden="true">
+      <svg viewBox="0 0 60 60"><circle class="track" cx="30" cy="30" r="24" /><circle class="fill" cx="30" cy="30" r="24" /></svg>
+      <span class="dot"></span>
+    </div>
+
+    <!-- ============ INTRO ============ -->
+    <section class="screen active" id="screen-intro">
+      <div class="intro">
+        <p class="eyebrow">Аркада, которой управляют руками</p>
+        <h1 class="logo">Hand<br /><span>Pilot</span></h1>
+        <p class="lead">Космическая аркада, где штурвал — твои руки. Прорвись через астероидное поле и лазерную засаду и победи крейсер «Тиран». Если жест не получается, игра подскажет, какой палец поправить.</p>
+        <ul class="features" id="intro-gestures"></ul>
+        <button class="btn primary big" data-action="start" id="start-btn">Включить камеру</button>
+        <p class="note" id="intro-status">Сядь в 50–80 см от камеры. Видео никуда не отправляется — всё распознаётся в браузере.</p>
+      </div>
+    </section>
+
+    <!-- ============ MENU ============ -->
+    <section class="screen" id="screen-menu">
+      <header class="topbar">
+        <div class="brand">Hand <span>Pilot</span></div>
+        <button class="chip" data-action="sound" id="sound-btn">Звук: вкл</button>
+      </header>
+      <div class="menu">
+        <div class="menu-head">
+          <h2>Готов к вылету?</h2>
+          <p class="hint-line"><span class="pulse"></span>Подними руку — курсор следует за указательным пальцем. Задержи его на кнопке на секунду.</p>
+        </div>
+        <div class="cards" id="cards"></div>
+        <ul class="legend" id="menu-gestures"></ul>
+      </div>
+    </section>
+
+    <!-- ============ TUTORIAL ============ -->
+    <section class="screen" id="screen-tutorial">
+      <div class="tut-card" id="tut-card">
+        <div class="tut-icon" id="tut-icon"></div>
+        <div class="tut-body">
+          <div class="tut-head">
+            <p class="eyebrow" id="tut-count"></p>
+            <ol class="steps" id="tut-steps"></ol>
+          </div>
+          <h2 id="tut-title"></h2>
+          <p id="tut-text"></p>
+          <div class="hold"><i id="tut-hold"></i></div>
+        </div>
+      </div>
+      <div class="tut-actions">
+        <button class="chip" data-action="skip-tutorial">Пропустить</button>
+        <button class="chip" data-action="menu">В меню</button>
+      </div>
+    </section>
+
+    <!-- ============ GAME HUD ============ -->
+    <section class="screen" id="screen-game">
+      <div class="hud">
+        <div class="hud-top">
+          <div class="hud-left">
+            <div class="score-box">
+              <b id="hud-score">0</b>
+              <span id="hud-mult"></span>
+            </div>
+            <ul class="gesture-panel" id="gesture-panel">
+              <li data-g="steer"><span class="gi"></span><div><b>Штурвал</b><div class="needle"><i id="steer-needle"></i></div></div></li>
+              <li data-g="fire"><span class="gi"></span><div><b>Огонь</b><div class="meter-h dot"></div></div></li>
+              <li data-g="shield"><span class="gi"></span><div><b>Щит</b><div class="meter-h"><i id="shield-bar"></i></div></div></li>
+              <li data-g="rocket"><span class="gi"></span><div><b>Ракета</b><div class="meter-h"><i id="rocket-bar"></i></div></div></li>
+            </ul>
+          </div>
+          <div class="timer">
+            <span id="hud-stage"></span>
+            <div class="timer-bar"><i id="hud-timer"></i></div>
+            <span id="hud-time"></span>
+          </div>
+          <div class="hud-right">
+            <div class="lives" id="hud-lives"></div>
+            <button class="chip" data-action="pause">Пауза</button>
+          </div>
+        </div>
+
+
+        <div class="stage-banner" id="stage-banner">
+          <p class="eyebrow" id="banner-step"></p>
+          <h2 id="banner-name"></h2>
+          <p id="banner-goal"></p>
+        </div>
+        <div class="countdown" id="countdown"></div>
+        <canvas id="pip"></canvas>
+      </div>
+    </section>
+
+    <!-- ============ PAUSE ============ -->
+    <section class="screen" id="screen-pause">
+      <div class="center-stack">
+        <h2 class="huge">Пауза</h2>
+        <p class="lead" id="pause-reason"></p>
+        <div class="row">
+          <button class="btn primary big" data-action="resume">Продолжить</button>
+          <button class="btn ghost big" data-action="menu">В меню</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ RESULTS ============ -->
+    <section class="screen scroll" id="screen-results">
+      <div class="results">
+        <div class="results-head">
+          <div>
+            <p class="eyebrow">Итоги миссии</p>
+            <h2 id="res-title">Миссия выполнена</h2>
+          </div>
+          <div class="score-big"><span id="res-score">0</span><small>очков</small><em id="res-record" hidden>Новый рекорд!</em></div>
+        </div>
+        <div class="row start">
+          <button class="btn primary big" data-action="play">Ещё раз</button>
+          <button class="btn ghost big" data-action="menu">В меню</button>
+        </div>
+        <div class="tiles" id="res-tiles"></div>
+        <div class="results-grid">
+          <div class="panel">
+            <h3>Жесты</h3>
+            <div id="res-gestures"></div>
+          </div>
+          <div class="panel">
+            <h3>Над чем поработать</h3>
+            <div id="res-hints"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div class="feedback" id="feedback">
+      <div class="fb-kind" id="fb-kind"></div>
+      <div class="fb-problem" id="fb-problem"></div>
+      <div class="fb-fix" id="fb-fix"></div>
+    </div>
+    <div class="toast" id="toast"></div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
